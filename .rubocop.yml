@@ -1,0 +1,6 @@
+require: rubocop-performance
+AllCops:
+  Exclude:
+    - '*.gemspec'
+    - 'spec/**/*.rb'
+    - 'vendor/**/*'

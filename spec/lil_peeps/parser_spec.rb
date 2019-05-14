@@ -1,0 +1,16 @@
+# frozen_string_literal: true
+
+RSpec.describe LilPeeps::Parser do
+  let(:parser) { described_class.new(args, options) }
+  let(:args) { [] }
+  let(:options) { {} }
+
+  describe 'initialize' do
+    it 'initializes the parser' do
+      expect { parser }.not_to raise_error
+    end
+
+    it 'sets the @args attribute'
+    it 'sets the @options attribute'
+  end
+end
