@@ -56,7 +56,6 @@ RSpec.describe LilPeeps::Parsable do
   end
 
   describe 'find' do
-
     context 'with a single option variation' do
       let(:subject) { parsable.new.tap { |o| o.args = %w(--test) } }
 

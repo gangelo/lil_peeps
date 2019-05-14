@@ -144,7 +144,7 @@ module LilPeeps
     end
 
     def options
-      @options ||= {}
+      @options ||= {}.extend(ParserOptions)
     end
 
     def options=(value)
@@ -153,7 +153,8 @@ module LilPeeps
 
     # Returns true if <option_arg> is an option, false otherwise
     def option?(option_arg)
-      option_arg =~ OPTION_REGEX
+      option_regex = options.option_regex || OPTION_REGEX
+      option_arg =~ option_regex
     end
 
     def return_results(option_found, option, values)
