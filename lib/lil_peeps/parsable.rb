@@ -63,7 +63,7 @@ module LilPeeps
     # status #=> true, option #=> '--debug', debug #=> false
     #
     #
-    def find(options, defaults = [])
+    def find(options, defaults = [], &block)
       args = self.args.dup
 
       # Ensures that <options> is an Array and
@@ -82,13 +82,8 @@ module LilPeeps
 
       # If the option is missing, return everything passed to us
       # along with a status of false (option missing)
-      unless option_found
-        results = [option_found, options.last, *defaults]
-        return results unless block_given?
-
-        results = yield(*results)
-        return option_found, options.last, *results
-      end
+      return return_results(option_found, options.last, *defaults, &block) \
+        unless option_found
 
       # Last occurance of the option wins..
       option_index = option_indicies.pop
@@ -117,11 +112,7 @@ module LilPeeps
       # option_args as a convenience so that the option args are returned
       # individually as opposed to an array of args. This makes things more
       # readable on the receiver's end.
-      results = [option_found, option, *option_args]
-      return results unless block_given?
-
-      values = yield(*results)
-      [option_found, option, *values]
+      return_results(option_found, option, *option_args, &block)
     end
 
     # Removes any option arguments that are options.
@@ -157,7 +148,11 @@ module LilPeeps
       option_arg =~ option_regex
     end
 
-    def return_results(option_found, option, values)
+    def return_results(option_found, option, *values)
+      results = [option_found, option, *values]
+      return results unless block_given?
+
+      values = yield(*results)
       [option_found, option, *values]
     end
 
