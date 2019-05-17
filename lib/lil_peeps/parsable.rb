@@ -8,7 +8,7 @@ module LilPeeps
   # Pass the args to the initializer and call #find providing the
   # option(s) you are looking for and the default(s) to provide
   # if the option is missing, or, if any of the option(s) arguments
-  # required are missing. If duplicate options are found, the last
+  # required are missing. If duplicate option are found, the last
   # option wins; the rest are discarded.
   module Parsable
     include ParserOptions
@@ -27,7 +27,7 @@ module LilPeeps
     #
     # PARAMS
     #
-    # <options>: the option list to look for (e.g. %w(-g --group-by))
+    # <option>: the option list to look for (e.g. %w(-g --group-by))
     # <argument_defaults>: the default values for the option argument list if
     # the arguments for the option are not found. For example, if
     # "-g <type> is expected and only "-g" is encountered,
@@ -51,17 +51,17 @@ module LilPeeps
     #                           value == 'true'
     #                         end
     # When the option is not found, <option> will return the last option in the
-    # <options> Array:
+    # <option> Array:
     # # => false, '-d', false
     #
-    def find(options, argument_defaults = [], &block)
+    def find(option, argument_defaults = [], &block)
       args = self.args.dup
 
-      # Ensures that <options> is an Array
-      options = ensure_array(options)
+      # Ensures that <option> is an Array
+      option = ensure_array(option)
 
-      # Ensures that <argument_defaults> is an Array necessary for generic processing of
-      # default option argument values
+      # Ensures that <argument_defaults> is an Array necessary for generic
+      # processing of default option argument values
       argument_defaults = ensure_array(argument_defaults)
 
       # Determines the number of arguments that are expected for the option
@@ -69,14 +69,17 @@ module LilPeeps
       option_argument_count = argument_defaults.count
 
       # Find the indicies of every occurrance of option found in
-      # the options list...
-      option_indicies = select_option_indicies(options, args)
-      option_found = option_indicies.any?
+      # the option list...
+      option_indicies = select_option_indicies(option, args)
 
       # If the option is missing, return everything passed to us
       # along with a status of false (option missing)
-      return return_results(option_found, options.last, *argument_defaults, &block) \
-        unless option_found
+      if option_indicies.empty?
+        return return_results(false,
+                              option.last,
+                              *argument_defaults,
+                              &block)
+      end
 
       # Last occurance of the option wins..
       option_index = option_indicies.pop
@@ -85,12 +88,12 @@ module LilPeeps
 
       option_args = args.slice(option_index + 1, option_argument_count)
 
-      # Ignore (remove) any other options along with their arguments
+      # Ignore (remove) any other option along with their arguments
       # that are of the same type; not necessary, but I guess it's my
       # OCD.
       option_indicies.each { |index| args.slice!(index, option_argument_count) }
 
-      # Clean up (remove) any arguments that may actually be options
+      # Clean up (remove) any arguments that may actually be option
       # (i.e. that begin with '-'' or '--'); this may occur if the user
       # failed to provide all the required option arguments.
       clean!(option_args)
@@ -105,10 +108,10 @@ module LilPeeps
       # option_args as a convenience so that the option args are returned
       # individually as opposed to an array of args. This makes things more
       # readable on the receiver's end.
-      return_results(option_found, option, *option_args, &block)
+      return_results(true, option, *option_args, &block)
     end
 
-    # Removes any option arguments that are options.
+    # Removes any option arguments that are option.
     #
     # For example, if an option requires the following format:
     #
@@ -149,10 +152,10 @@ module LilPeeps
       [option_found, option, *values]
     end
 
-    # Returns the indicies of every <options> occurrance found in the <args>
+    # Returns the indicies of every <option> occurrance found in the <args>
     # Array
-    def select_option_indicies(options, args)
-      args.each_index.select { |index| options.include?(args[index]) }
+    def select_option_indicies(option, args)
+      args.each_index.select { |index| option.include?(args[index]) }
     end
 
     protected :args,

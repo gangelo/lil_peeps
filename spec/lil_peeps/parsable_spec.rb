@@ -3,7 +3,7 @@
 RSpec.describe LilPeeps::Parsable do
   let(:parsable) { class Klass; include LilPeeps::Parsable end }
   let(:args) { [] }
-  let(:options) { {} }
+  let(:option) { {} }
 
   before(:all) do
     described_class.send(:public, *described_class.protected_instance_methods)
@@ -33,16 +33,16 @@ RSpec.describe LilPeeps::Parsable do
       end
     end
 
-    context 'when passing options and parameters' do
+    context 'when passing option and parameters' do
       let(:args) { %w(keep1 --arg1 keep2 -arg2 --arg3 keep3 -arg4) }
       it 'removes unwanted entries' do
         expect(subject.clean!(args)).to eq(%w(keep1 keep2 keep3))
       end
     end
 
-    context 'when passing only options' do
+    context 'when passing only option' do
       let(:args) { %w(keep1 keep2 keep3) }
-      it 'returns the options' do
+      it 'returns the option' do
         expect(subject.clean!(args)).to eq(args)
       end
     end
@@ -189,7 +189,7 @@ RSpec.describe LilPeeps::Parsable do
     end
   end
 
-  describe 'options' do
+  describe 'option' do
     let(:subject) { parsable.new }
     let(:options) { { option: :option } }
     it 'gets/sets the attribute' do
