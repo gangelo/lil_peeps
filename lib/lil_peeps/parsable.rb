@@ -17,6 +17,25 @@ module LilPeeps
 
     attr_accessor :args
 
+    # Removes any option arguments that are option.
+    #
+    # For example, if an option requires the following format:
+    #
+    # --option1 o1a o1b
+    #
+    # but the user entered...
+    #
+    # --option1 o1a --option2 o2a
+    #
+    # This method would receive %w(ola --option2). Because we know
+    # --option2 isn't an argument of --option1 (it is a whole other
+    # option altogether), it should be discarded. Consequently,
+    # this method removes --option2 from the passed <option_args>
+    # Array.
+    def clean!(option_args)
+      option_args.delete_if { |option_arg| option?(option_arg) }
+    end
+
     # Ensures that <object> is an Array
     def ensure_array(object)
       object.is_a?(Array) ? object : [object]
@@ -64,42 +83,68 @@ module LilPeeps
       # processing of default option argument values
       argument_defaults = ensure_array(argument_defaults)
 
-      # Determines the number of arguments that are expected for the option
-      # based on the argument_defaults provided for the option arguments
-      option_argument_count = argument_defaults.count
-
       # Find the indicies of every occurrance of option found in
       # the option list...
       option_indicies = select_option_indicies(option, args)
 
       # If the option is missing, return everything passed to us
       # along with a status of false (option missing)
-      if option_indicies.empty?
-        return return_results(false,
-                              option.last,
-                              *argument_defaults,
-                              &block)
-      end
+      # if option_indicies.empty?
+      #   return return_results(false,
+      #                         option.last,
+      #                         *argument_defaults,
+      #                         &block)
+      # end
 
+      if option_indicies.empty?
+        option_not_found(option, argument_defaults, &block)
+      else
+        option_found(option_indicies, argument_defaults, &block)
+      end
+    end
+
+    # This member processes options that are not found.
+    def option_not_found(option, argument_defaults, &block)
+      return_results(false, option.last, *argument_defaults, &block)
+    end
+
+    # This member processes options that are found.
+    #
+    # Params
+    #
+    # <option_indicies> = the index of each option occurance within #args.
+    # Under normal circumstances, there should only be one occurance unless
+    # more than one option can be found within #args.
+    #
+    # <argument_defaults> = the defaults that should be provided for each
+    # option argument that is not found.
+    #
+    # <argument_defaults>.count is used to determine the number of arguments
+    # that are expected for the option represented by <option_indicies>.
+    def option_found(option_indicies, argument_defaults, &block)
       # Last occurance of the option wins..
       option_index = option_indicies.pop
+
       # Get the option found and the option arguments provided...
       option = args[option_index]
 
-      option_args = args.slice(option_index + 1, option_argument_count)
+      option_args = args.slice(option_index + 1, argument_defaults.count)
 
       # Ignore (remove) any other option along with their arguments
       # that are of the same type; not necessary, but I guess it's my
       # OCD.
-      option_indicies.each { |index| args.slice!(index, option_argument_count) }
+      # rubocop:disable Metrics/LineLength
+      option_indicies.each { |index| args.slice!(index, argument_defaults.count) }
+      # rubocop:enable Metrics/LineLength
 
       # Clean up (remove) any arguments that may actually be option
       # (i.e. that begin with '-'' or '--'); this may occur if the user
       # failed to provide all the required option arguments.
       clean!(option_args)
+
       # If there are any arguments missing, replace the missing
       # argument with the argument_defaults provided
-      (option_args.count...option_argument_count).each do |i|
+      (option_args.count...argument_defaults.count).each do |i|
         option_args << argument_defaults[i]
       end
 
@@ -111,23 +156,10 @@ module LilPeeps
       return_results(true, option, *option_args, &block)
     end
 
-    # Removes any option arguments that are option.
-    #
-    # For example, if an option requires the following format:
-    #
-    # --option1 o1a o1b
-    #
-    # but the user entered...
-    #
-    # --option1 o1a --option2 o2a
-    #
-    # This method would receive %w(ola --option2). Because we know
-    # --option2 isn't an argument of --option1 (it is a whole other
-    # option altogether), it should be discarded. Consequently,
-    # this method removes --option2 from the passed <option_args>
-    # Array.
-    def clean!(option_args)
-      option_args.delete_if { |option_arg| option?(option_arg) }
+    # Returns true if <option_arg> is an option, false otherwise
+    def option?(option_arg)
+      option_regex = options.option_regex || OPTION_REGEX
+      option_arg =~ option_regex
     end
 
     def options
@@ -136,12 +168,6 @@ module LilPeeps
 
     def options=(value)
       @options = value.dup.extend(ParserOptions)
-    end
-
-    # Returns true if <option_arg> is an option, false otherwise
-    def option?(option_arg)
-      option_regex = options.option_regex || OPTION_REGEX
-      option_arg =~ option_regex
     end
 
     def return_results(option_found, option, *values)
@@ -162,6 +188,7 @@ module LilPeeps
               :args=,
               :clean!,
               :ensure_array,
+              :option_found,
               :option?,
               :options,
               :options=,
