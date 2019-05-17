@@ -22,22 +22,16 @@ module LilPeeps
       object.is_a?(Array) ? object : [object]
     end
 
-    # Determines the number of arguments that are expected for the option based
-    # on the defaults provided for the option arguments
-    def option_argument_count(option_argument_defaults)
-      option_argument_defaults.respond_to?(:count) ? option_argument_defaults.count : 1
-    end
-
     # Finds the option in #args and return the option argument(s)
     # provided.
     #
     # PARAMS
     #
     # <options>: the option list to look for (e.g. %w(-g --group-by))
-    # <defaults>: the default values for the option argument list if
+    # <argument_defaults>: the default values for the option argument list if
     # the arguments for the option are not found. For example, if
     # "-g <type> is expected and only "-g" is encountered,
-    # "-g <defaults[0]>" will be used.
+    # "-g <argument_defaults[0]>" will be used.
     #
     # RETURN
     #
@@ -48,32 +42,31 @@ module LilPeeps
     #
     # EXAMPLES
     #
-    # $ osm modified -t arg1 arg2
-    # options_parser = Helpers::Options.new(args)
-    # status, option, arg1, arg2 = options_parser.find(%w(--test -t), %w(def1 def2))
-    # status #=> true, option #=> '-t', arg1 #=> 'arg1', arg2 #=> 'arg2'
+    # Assuming the option is found:
+    # status, option, arg1, arg2 = find(%w(--test -t), %w(def1 def2))
+    # # => true, '-t', 'arg1', 'arg2'
     #
-    # $ osm modified --debug
-    # options_parser = Helpers::Options.new(args)
-    # status, option, debug = options_parser.find('--debug', false) do |status, option, value|
-    #                           puts '--debug option not found, using default' unless status
-    #                           # Return <value> if it's not 'true'
-    #                           to_bool_or_default(value)
+    # Assuming the option is not found:
+    # status, option, debug = find(['--debug', '-d'], 'false') do |_, _, value|
+    #                           value == 'true'
     #                         end
-    # status #=> true, option #=> '--debug', debug #=> false
+    # When the option is not found, <option> will return the last option in the
+    # <options> Array:
+    # # => false, '-d', false
     #
-    #
-    def find(options, defaults = [], &block)
+    def find(options, argument_defaults = [], &block)
       args = self.args.dup
 
-      # Ensures that <options> is an Array and
+      # Ensures that <options> is an Array
       options = ensure_array(options)
-      # Determines the number of arguments expected to associated with this option
-      option_argument_count = option_argument_count(defaults)
 
-      # Ensures that <defaults> is an Array necessary for generic processing of
+      # Ensures that <argument_defaults> is an Array necessary for generic processing of
       # default option argument values
-      defaults = ensure_array(defaults)
+      argument_defaults = ensure_array(argument_defaults)
+
+      # Determines the number of arguments that are expected for the option
+      # based on the argument_defaults provided for the option arguments
+      option_argument_count = argument_defaults.count
 
       # Find the indicies of every occurrance of option found in
       # the options list...
@@ -82,7 +75,7 @@ module LilPeeps
 
       # If the option is missing, return everything passed to us
       # along with a status of false (option missing)
-      return return_results(option_found, options.last, *defaults, &block) \
+      return return_results(option_found, options.last, *argument_defaults, &block) \
         unless option_found
 
       # Last occurance of the option wins..
@@ -102,9 +95,9 @@ module LilPeeps
       # failed to provide all the required option arguments.
       clean!(option_args)
       # If there are any arguments missing, replace the missing
-      # argument with the defaults provided
+      # argument with the argument_defaults provided
       (option_args.count...option_argument_count).each do |i|
-        option_args << defaults[i]
+        option_args << argument_defaults[i]
       end
 
       # Return the status (found/not found), the option that was found,
@@ -169,7 +162,6 @@ module LilPeeps
               :option?,
               :options,
               :options=,
-              :option_argument_count,
               :return_results,
               :select_option_indicies
   end
