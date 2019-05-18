@@ -5,11 +5,10 @@ require_relative 'parser_options'
 module LilPeeps
   # Helper method to parse command line arguments.
   #
-  # Pass the args to the initializer and call #find providing the
-  # option(s) you are looking for and the default(s) to provide
-  # if the option is missing, or, if any of the option(s) arguments
-  # required are missing. If duplicate option are found, the last
-  # option wins; the rest are discarded.
+  # Pass the args to the initializer and call #find providing the option(s) you
+  # are looking for and the default(s) to provide if the option is missing, or,
+  # if any of the option(s) arguments required are missing. If duplicate option
+  # are found, the last option wins; the rest are discarded.
   module Parsable
     include ParserOptions
 
@@ -27,17 +26,17 @@ module LilPeeps
     #
     # --option1 o1a --option2 o2a
     #
-    # This method would receive %w(ola --option2). Because we know
-    # --option2 isn't an argument of --option1 (it is a whole other
-    # option altogether), it should be discarded. Consequently,
-    # this method removes --option2 from the passed <option_args>
-    # Array.
+    # This method would receive %w(ola --option2). Because we know --option2
+    # isn't an argument of --option1 (it is a whole other option altogether), it
+    # should be discarded. Consequently, this method removes --option2 from the
+    # passed <option_args> Array.
     def clean!(option_args)
       option_args.delete_if { |option_arg| option?(option_arg) }
     end
 
     # Ensures that <object> is an Array
     def ensure_array(object)
+      return [] if object.nil?
       object.is_a?(Array) ? object : [object]
     end
 
@@ -72,7 +71,6 @@ module LilPeeps
     # When the option is not found, <option> will return the last option in the
     # <option> Array:
     # # => false, '-d', false
-    #
     def find(option, argument_defaults = [], &block)
       args = self.args.dup
 
@@ -87,15 +85,6 @@ module LilPeeps
       # the option list...
       option_indicies = select_option_indicies(option, args)
 
-      # If the option is missing, return everything passed to us
-      # along with a status of false (option missing)
-      # if option_indicies.empty?
-      #   return return_results(false,
-      #                         option.last,
-      #                         *argument_defaults,
-      #                         &block)
-      # end
-
       if option_indicies.empty?
         option_not_found(option, argument_defaults, &block)
       else
@@ -105,6 +94,8 @@ module LilPeeps
 
     # This member processes options that are not found.
     def option_not_found(option, argument_defaults, &block)
+      # If the option is missing, return everything passed to us
+      # along with a status of false (option missing)
       return_results(false, option.last, *argument_defaults, &block)
     end
 
@@ -130,29 +121,22 @@ module LilPeeps
 
       option_args = args.slice(option_index + 1, argument_defaults.count)
 
-      # Ignore (remove) any other option along with their arguments
-      # that are of the same type; not necessary, but I guess it's my
-      # OCD.
-      # rubocop:disable Metrics/LineLength
-      option_indicies.each { |index| args.slice!(index, argument_defaults.count) }
-      # rubocop:enable Metrics/LineLength
-
-      # Clean up (remove) any arguments that may actually be option
-      # (i.e. that begin with '-'' or '--'); this may occur if the user
-      # failed to provide all the required option arguments.
+      # Clean up (remove) any arguments that may actually be option (i.e. that
+      # begin with '-'' or '--'); this may occur if the user failed to provide
+      # all the required option arguments.
       clean!(option_args)
 
-      # If there are any arguments missing, replace the missing
-      # argument with the argument_defaults provided
+      # If there are any arguments missing, replace the missing argument with
+      # the argument_defaults provided
       (option_args.count...argument_defaults.count).each do |i|
         option_args << argument_defaults[i]
       end
 
-      # Return the status (found/not found), the option that was found,
-      # and the option arguments; use the splat (*) operator on the
-      # option_args as a convenience so that the option args are returned
-      # individually as opposed to an array of args. This makes things more
-      # readable on the receiver's end.
+      # Return the status (found/not found), the option that was found, and the
+      # option arguments; use the splat (*) operator on the option_args as a
+      # convenience so that the option args are returned individually as opposed
+      # to an array of args. This makes things more readable on the receiver's
+      # end.
       return_results(true, option, *option_args, &block)
     end
 
