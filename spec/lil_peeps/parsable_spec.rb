@@ -55,6 +55,33 @@ RSpec.describe LilPeeps::Parsable do
     end
   end
 
+  describe 'ensure_array' do
+    let(:subject) { parsable.new }
+    context 'when an Array is passed' do
+      it 'returns an Array' do
+        expect(subject.ensure_array([1, 2, 3])).to eq([1, 2, 3])
+      end
+    end
+
+    context 'when an Array is NOT passed' do
+      it 'returns an Array' do
+        expect(subject.ensure_array(1)).to eq([1])
+      end
+    end
+
+    context 'when an empty Array is passed' do
+      it 'returns an empty Array' do
+        expect(subject.ensure_array([])).to eq([])
+      end
+    end
+
+    context 'when nil is passed' do
+      it 'returns an empty Array' do
+        expect(subject.ensure_array(nil)).to eq([])
+      end
+    end
+  end
+
   describe 'find' do
     context 'with a single option variation' do
       let(:subject) { parsable.new.tap { |o| o.args = %w(--test) } }
