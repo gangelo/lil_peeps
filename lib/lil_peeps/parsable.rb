@@ -37,6 +37,7 @@ module LilPeeps
     # Ensures that <object> is an Array
     def ensure_array(object)
       return [] if object.nil?
+
       object.is_a?(Array) ? object : [object]
     end
 
@@ -72,6 +73,8 @@ module LilPeeps
     # <option> Array:
     # # => false, '-d', false
     def find(option, argument_defaults = [], &block)
+      raise ArgumentError, 'Param [option] is nil' if option.nil?
+
       args = self.args.dup
 
       # Ensures that <option> is an Array
@@ -81,8 +84,8 @@ module LilPeeps
       # processing of default option argument values
       argument_defaults = ensure_array(argument_defaults)
 
-      # Find the indicies of every occurrance of option found in
-      # the option list...
+      # Find the indicies of every occurrance of option found in the option
+      # list...
       option_indicies = select_option_indicies(option, args)
 
       if option_indicies.empty?
@@ -90,13 +93,6 @@ module LilPeeps
       else
         option_found(option_indicies, argument_defaults, &block)
       end
-    end
-
-    # This member processes options that are not found.
-    def option_not_found(option, argument_defaults, &block)
-      # If the option is missing, return everything passed to us
-      # along with a status of false (option missing)
-      return_results(false, option.last, *argument_defaults, &block)
     end
 
     # This member processes options that are found.
@@ -113,6 +109,12 @@ module LilPeeps
     # <argument_defaults>.count is used to determine the number of arguments
     # that are expected for the option represented by <option_indicies>.
     def option_found(option_indicies, argument_defaults, &block)
+      raise ArgumentError, 'Param [option_indicies] is nil' if option_indicies.nil?
+      raise ArgumentError, 'Param [option_indicies] does not respond_to? :last' \
+        unless option_indicies.respond_to?(:last)
+      raise ArgumentError, 'Param [argument_defaults] is nil' \
+        if argument_defaults.nil?
+
       # Last occurance of the option wins..
       option_index = option_indicies.pop
 
@@ -138,6 +140,19 @@ module LilPeeps
       # to an array of args. This makes things more readable on the receiver's
       # end.
       return_results(true, option, *option_args, &block)
+    end
+
+    # This member processes options that are not found.
+    def option_not_found(option, argument_defaults, &block)
+      raise ArgumentError, 'Param [option] is nil' if option.nil?
+      raise ArgumentError, 'Param [option] does not respond_to? :last' \
+        unless option.respond_to?(:last)
+      raise ArgumentError, 'Param [argument_defaults] is nil' \
+        if argument_defaults.nil?
+
+      # If the option is missing, return everything passed to us
+      # along with a status of false (option missing)
+      return_results(false, option.last, *argument_defaults, &block)
     end
 
     # Returns true if <option_arg> is an option, false otherwise
