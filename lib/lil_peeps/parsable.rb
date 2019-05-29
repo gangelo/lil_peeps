@@ -109,9 +109,10 @@ module LilPeeps
     # <argument_defaults>.count is used to determine the number of arguments
     # that are expected for the option represented by <option_indicies>.
     def option_found(option_indicies, argument_defaults, &block)
-      raise ArgumentError, 'Param [option_indicies] is nil' if option_indicies.nil?
-      raise ArgumentError, 'Param [option_indicies] does not respond_to? :last' \
-        unless option_indicies.respond_to?(:last)
+      raise ArgumentError, 'Param [option_indicies] is nil' \
+        if option_indicies.nil?
+      raise ArgumentError, 'Param [option_indicies] is not an Array' \
+        unless option_indicies.is_a?(Array)
       raise ArgumentError, 'Param [argument_defaults] is nil' \
         if argument_defaults.nil?
 
@@ -145,13 +146,13 @@ module LilPeeps
     # This member processes options that are not found.
     def option_not_found(option, argument_defaults, &block)
       raise ArgumentError, 'Param [option] is nil' if option.nil?
-      raise ArgumentError, 'Param [option] does not respond_to? :last' \
-        unless option.respond_to?(:last)
+      raise ArgumentError, 'Param [option] is not an Array' \
+        unless option.is_a?(Array)
       raise ArgumentError, 'Param [argument_defaults] is nil' \
         if argument_defaults.nil?
 
-      # If the option is missing, return everything passed to us
-      # along with a status of false (option missing)
+      # If the option is missing, return everything passed to us along with a
+      # status of false (option missing)
       return_results(false, option.last, *argument_defaults, &block)
     end
 
@@ -166,10 +167,18 @@ module LilPeeps
     end
 
     def options=(value)
+      raise ArgumentError, 'Param [value] is nil' if value.nil?
+      raise ArgumentError, 'Param [value] is not a Hash' \
+        unless value.is_a?(Hash)
+
       @options = value.dup.extend(ParserOptions)
     end
 
     def return_results(option_found, option, *values)
+      raise ArgumentError, 'Param [option_found] is nil' if option_found.nil?
+      raise ArgumentError, 'Param [option_found] not true or false' \
+        unless [true, false].include?(option_found)
+
       results = [option_found, option, *values]
       return results unless block_given?
 
