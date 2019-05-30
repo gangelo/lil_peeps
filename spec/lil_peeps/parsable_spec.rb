@@ -173,5 +173,17 @@ RSpec.describe LilPeeps::Parsable do
         end
       end
     end
+
+    context 'with options provided' do
+      let(:subject) { parsable.new.tap { |o| o.args = %w($d $$debug $$test $t $a $$argh) } }
+      let(:option_variants) { %w($$test $t) }
+
+      context 'when an alternate option regex is provided' do
+        it 'returns the correct status, option and no value' do
+          subject.options = { option_regex: /(\A|\s)\$+/ }
+          expect(subject.find(option_variants)).to eq([true, 'test'])
+        end
+      end
+    end
   end
 end
