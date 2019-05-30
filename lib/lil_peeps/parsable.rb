@@ -47,10 +47,10 @@ module LilPeeps
     # PARAMS
     #
     # <option>: the option list to look for (e.g. %w(-g --group-by))
-    # <argument_defaults>: the default values for the option argument list if
-    # the arguments for the option are not found. For example, if
+    # <option_argument_defaults>: the default values for the option argument
+    # list if the arguments for the option are not found. For example, if
     # "-g <type> is expected and only "-g" is encountered,
-    # "-g <argument_defaults[0]>" will be used.
+    # "-g <option_argument_defaults[0]>" will be used.
     #
     # RETURN
     #
@@ -72,27 +72,35 @@ module LilPeeps
     # When the option is not found, <option> will return the last option in the
     # <option> Array:
     # # => false, '-d', false
-    def find(option, argument_defaults = [], &block)
-      raise ArgumentError, 'Param [option] is nil' if option.nil?
+    def find(option_variants, option_argument_defaults = [], &block)
+      raise ArgumentError, 'Param [option_variants] is nil' if option_variants.nil?
 
-      args = self.args.dup
+      # Ensures that <option_variants> is an Array
+      option_variants = ensure_array(option_variants)
 
-      # Ensures that <option> is an Array
-      option = ensure_array(option)
+      # Ensures that <option_argument_defaults> is an Array necessary for
+      # generic processing of option argument default values
+      option_argument_defaults = ensure_array(option_argument_defaults)
 
-      # Ensures that <argument_defaults> is an Array necessary for generic
-      # processing of default option argument values
-      argument_defaults = ensure_array(argument_defaults)
+      parsed_args = parse(args)
 
-      # Find the indicies of every occurrance of option found in the option
-      # list...
-      option_indicies = select_option_indicies(option, args)
+      # Find the first option variant occurrance in the option_variants list
+      option = find_option_variant(option_variants, parsed_args)
 
-      if option_indicies.empty?
-        option_not_found(option, argument_defaults, &block)
+      if option.nil?
+        option_not_found(normalize_option_variant(option_variants.first), option_argument_defaults, &block)
       else
-        option_found(option_indicies, argument_defaults, &block)
+        option_found(option, option_argument_defaults, &block)
       end
+    end
+
+    # Returns the first option occurrance found in the <parsed_args> OpenStruct
+    def find_option_variant(option_variants, parsed_args)
+      option_variants.each do |option_variant|
+        option_variant = parsed_args[option_variant_to_sym(option_variant)]
+        return option_variant unless option_variant.nil?
+      end
+      nil
     end
 
     # This member processes options that are found.
@@ -103,57 +111,38 @@ module LilPeeps
     # Under normal circumstances, there should only be one occurance unless
     # more than one option can be found within #args.
     #
-    # <argument_defaults> = the defaults that should be provided for each
+    # <option_argument_defaults> = the defaults that should be provided for each
     # option argument that is not found.
     #
-    # <argument_defaults>.count is used to determine the number of arguments
-    # that are expected for the option represented by <option_indicies>.
-    def option_found(option_indicies, argument_defaults, &block)
-      raise ArgumentError, 'Param [option_indicies] is nil' \
-        if option_indicies.nil?
-      raise ArgumentError, 'Param [option_indicies] is not an Array' \
-        unless option_indicies.is_a?(Array)
-      raise ArgumentError, 'Param [argument_defaults] is nil' \
-        if argument_defaults.nil?
+    # <option_argument_defaults>.count is used to determine the number of
+    # arguments that are expected for the option represented by
+    # <option_indicies>.
+    def option_found(option, option_argument_defaults, &block)
+      raise ArgumentError, 'Param [option] is nil' if option.nil?
+      raise ArgumentError, 'Param [option_argument_defaults] is nil' if option_argument_defaults.nil?
 
-      # Last occurance of the option wins..
-      option_index = option_indicies.pop
-
-      # Get the option found and the option arguments provided...
-      option = args[option_index]
-
-      option_args = args.slice(option_index + 1, argument_defaults.count)
-
-      # Clean up (remove) any arguments that may actually be option (i.e. that
-      # begin with '-'' or '--'); this may occur if the user failed to provide
-      # all the required option arguments.
-      clean!(option_args)
+      option_args = option[:args].slice(0, option_argument_defaults.count)
 
       # If there are any arguments missing, replace the missing argument with
-      # the argument_defaults provided
-      (option_args.count...argument_defaults.count).each do |i|
-        option_args << argument_defaults[i]
-      end
+      # the option_argument_defaults provided
+      (option_args.count...option_argument_defaults.count).each { |i| option_args << option_argument_defaults[i] }
 
       # Return the status (found/not found), the option that was found, and the
       # option arguments; use the splat (*) operator on the option_args as a
       # convenience so that the option args are returned individually as opposed
       # to an array of args. This makes things more readable on the receiver's
       # end.
-      return_results(true, option, *option_args, &block)
+      return_results(true, option[:option], *option_args, &block)
     end
 
     # This member processes options that are not found.
-    def option_not_found(option, argument_defaults, &block)
+    def option_not_found(option, option_argument_defaults, &block)
       raise ArgumentError, 'Param [option] is nil' if option.nil?
-      raise ArgumentError, 'Param [option] is not an Array' \
-        unless option.is_a?(Array)
-      raise ArgumentError, 'Param [argument_defaults] is nil' \
-        if argument_defaults.nil?
+      raise ArgumentError, 'Param [option_argument_defaults] is nil' if option_argument_defaults.nil?
 
       # If the option is missing, return everything passed to us along with a
       # status of false (option missing)
-      return_results(false, option.last, *argument_defaults, &block)
+      return_results(false, option, *option_argument_defaults, &block)
     end
 
     # Returns true if <option_arg> is an option, false otherwise
@@ -168,16 +157,53 @@ module LilPeeps
 
     def options=(value)
       raise ArgumentError, 'Param [value] is nil' if value.nil?
-      raise ArgumentError, 'Param [value] is not a Hash' \
-        unless value.is_a?(Hash)
+      raise ArgumentError, 'Param [value] is not a Hash' unless value.is_a?(Hash)
 
       @options = value.dup.extend(ParserOptions)
     end
 
+    def option_and_option_args(arg_string)
+      options_and_option_args = arg_string.split
+      [options_and_option_args[0], options_and_option_args[1..-1]]
+    end
+
+    def option_and_option_hash(option_and_option_args_string)
+      option, option_args = option_and_option_args(option_and_option_args_string)
+      args_hash = if option_args.nil?
+                    {}
+                  else
+                    option_args.each_with_index.each_with_object({}) do |(arg, index), hash|
+                      hash["arg#{index}".to_sym] = arg
+                    end
+                  end
+      [option.to_sym, { option: option, args: option_args }.merge(args_hash)]
+    end
+
+    def option_variant_to_sym(option_variant)
+      normalize_option_variant(option_variant).to_sym
+    end
+
+    def normalize_option_variant(option_variant)
+      # Remove leading '-'
+      option_variant.gsub(/\A-+/, '')
+    end
+
+    def parse(args)
+      args_strings = args.join(' ').split(/(\A|\s)-+/).reject do |a|
+        a.strip!
+        a.empty?
+      end
+      parsed_args = {}
+      args_strings.map do |arg_string|
+        option, option_hash = option_and_option_hash(arg_string)
+        parsed_args[option] = option_hash
+      end
+      parsed_args
+    end
+
     def return_results(option_found, option, *values)
       raise ArgumentError, 'Param [option_found] is nil' if option_found.nil?
-      raise ArgumentError, 'Param [option_found] not true or false' \
-        unless [true, false].include?(option_found)
+      raise ArgumentError, 'Param [option_found] not true or false' unless [true, false].include?(option_found)
 
       results = [option_found, option, *values]
       return results unless block_given?
@@ -186,21 +212,7 @@ module LilPeeps
       [option_found, option, *values]
     end
 
-    # Returns the indicies of every <option> occurrance found in the <args>
-    # Array
-    def select_option_indicies(option, args)
-      args.each_index.select { |index| option.include?(args[index]) }
-    end
-
-    protected :args,
-              :args=,
-              :clean!,
-              :ensure_array,
-              :option_found,
-              :option?,
-              :options,
-              :options=,
-              :return_results,
-              :select_option_indicies
+    protected :args, :args=, :clean!, :ensure_array, :find_option_variant, :normalize_option_variant, :option_found,
+              :option?, :options, :options=, :option_variant_to_sym, :parse, :return_results
   end
 end

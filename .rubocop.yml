@@ -4,3 +4,5 @@ AllCops:
     - '*.gemspec'
     - 'spec/**/*.rb'
     - 'vendor/**/*'
+Metrics/LineLength:
+  Max: 120
