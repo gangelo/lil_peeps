@@ -2,6 +2,7 @@ require: rubocop-performance
 AllCops:
   Exclude:
     - '*.gemspec'
+    - 'lib/tasks/**/*'
     - 'spec/**/*.rb'
     - 'vendor/**/*'
 Metrics/LineLength:

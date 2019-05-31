@@ -15,7 +15,7 @@ module LilPeeps
 
     def initialize(args, options = {})
       self.args = args.dup
-      self.options = options
+      self.options = options || {}
     end
   end
 end

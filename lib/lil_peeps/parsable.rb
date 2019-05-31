@@ -139,15 +139,17 @@ module LilPeeps
     end
 
     def option_and_option_hash(option_and_option_args_string)
-      option, option_args = option_and_option_args(option_and_option_args_string)
-      args_hash = if option_args.nil?
-                    {}
-                  else
-                    option_args.each_with_index.each_with_object({}) do |(arg, index), hash|
-                      hash["arg#{index}".to_sym] = arg
-                    end
-                  end
-      [option.to_sym, { option: option, args: option_args }.merge(args_hash)]
+      option, option_arguments = option_and_option_args(option_and_option_args_string)
+      option_arguments_hash = if option_arguments.nil?
+                                {}
+                              else
+                                # rubocop:disable Metrics/LineLength
+                                option_arguments.each_with_index.each_with_object({}) do |(option_argument, index), hash|
+                                  hash["arg#{index}".to_sym] = option_argument
+                                end
+                                # rubocop:enable Metrics/LineLength
+                              end
+      [option.to_sym, { option: option, args: option_arguments }.merge(option_arguments_hash)]
     end
 
     def option_variant_to_sym(option_variant)
