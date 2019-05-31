@@ -3,13 +3,9 @@
 require_relative 'parsable'
 
 module LilPeeps
-  # Helper method to parse command line arguments.
-  #
-  # Pass the args to the initializer and call #find providing the
-  # option(s) you are looking for and the default(s) to provide
-  # if the option is missing, or, if any of the option(s) arguments
-  # required are missing. If duplicate options are found, the last
-  # option wins; the rest are discarded.
+  # Helper method to parse command line arguments. Pass the args to the initializer and call #find providing the
+  # option variants you are looking for, and any option argument default(s). Option argument defaults will be used
+  # in the case that the option and/or any of the option arguments is missing
   class Parser
     include Parsable
 

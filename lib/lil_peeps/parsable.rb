@@ -186,7 +186,8 @@ module LilPeeps
       [option_variant_found, option, *values]
     end
 
-    protected :args, :args=, :ensure_array, :find_option_variant, :normalize_option_variant, :option_variant_found,
-              :option_regex, :options, :options=, :option_variant_to_sym, :parse, :return_results
+    protected :args, :args=, :ensure_array, :find_option_variant, :normalize_option_variant, :option_and_option_args,
+              :option_and_option_hash, :option_variant_found, :option_variant_not_found, :option_regex, :options,
+              :options=, :option_variant_to_sym, :parse, :return_results
   end
 end
