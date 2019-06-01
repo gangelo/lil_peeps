@@ -11,7 +11,7 @@ RSpec.describe LilPeeps::Parsable do
   end
 
   describe '#find' do
-    context 'with no option provided' do
+    context 'with no option variants provided' do
       let(:subject) { parsable.new.tap { |o| o.args = %w(--test) } }
       let(:option_variants) { nil }
 
@@ -20,11 +20,11 @@ RSpec.describe LilPeeps::Parsable do
       end
     end
 
-    context 'with a single option variation provided' do
+    context 'with a single option variant provided' do
       let(:subject) { parsable.new.tap { |o| o.args = %w(--test) } }
 
       # No default arguments values provided
-      context 'with no default argument values provided' do
+      context 'with no option argument defaults provided' do
         context 'when the option is found' do
           let(:option_variants) { '--test' }
 
@@ -42,8 +42,8 @@ RSpec.describe LilPeeps::Parsable do
         end
       end
 
-      # One default argument values provided
-      context 'with one default argument value provided' do
+      # One option argument defaults provided
+      context 'with one option argument default provided' do
         context 'when the option is found' do
           let(:option_variants) { '--test' }
 
@@ -61,8 +61,8 @@ RSpec.describe LilPeeps::Parsable do
         end
       end
 
-      # With multiple default argument values provided
-      context 'with multiple default argument values provided' do
+      # With multiple option argument defaults provided
+      context 'with multiple option argument defaults provided' do
         context 'when no option arguments are found' do
           let(:subject) { parsable.new.tap { |o| o.args = %w(--test) } }
           let(:option_variants) { '--test' }
@@ -106,7 +106,7 @@ RSpec.describe LilPeeps::Parsable do
       let(:subject) { parsable.new.tap { |o| o.args = %w(-d --debug --test -t -a --argh) } }
 
       # No default arguments values provided
-      context 'with no default argument values provided' do
+      context 'with no option argument defaults provided' do
         context 'when the option is found' do
           let(:option_variants) { %w(--test -t) }
 
@@ -124,8 +124,8 @@ RSpec.describe LilPeeps::Parsable do
         end
       end
 
-      # One default argument values provided
-      context 'with one default argument value provided' do
+      # One option argument defaults provided
+      context 'with one option argument default provided' do
         context 'when the option is found' do
           let(:option_variants) { %w(--test -t) }
 
@@ -143,8 +143,8 @@ RSpec.describe LilPeeps::Parsable do
         end
       end
 
-      # With multiple default argument values provided
-      context 'with multiple default argument values provided' do
+      # With multiple option argument defaults provided
+      context 'with multiple option argument defaults provided' do
         context 'when no option arguments are found' do
           let(:subject) { parsable.new.tap { |o| o.args = %w(-t) } }
           let(:option_variants) { %w(--test -t) }
@@ -182,6 +182,32 @@ RSpec.describe LilPeeps::Parsable do
         it 'returns the correct status, option and no value' do
           subject.options = { option_regex: /(\A|\s)\$+/ }
           expect(subject.find(option_variants)).to eq([true, 'test'])
+        end
+      end
+    end
+
+    context 'with a block provided' do
+      let(:subject) { parsable.new.tap { |o| o.args = %w(-d --debug --timeout 1500 -to 2500 --test -t -a --argh) } }
+
+      context 'when the option arguments are not altered' do
+        let(:option_variants) { %w(--timeout 1500 -to) }
+        let(:option_argument_defaults) { ['1000 milliseconds'] }
+
+        it 'returns the correct status, option and values' do
+          expect(subject.find(option_variants, option_argument_defaults) do |status, option, timeout|
+            timeout
+          end).to eq([true, 'timeout', '1500'])
+        end
+      end
+
+      context 'when the option arguments are altered' do
+        let(:option_variants) { %w(--timeout -to) }
+        let(:option_argument_defaults) { ['1000 milliseconds'] }
+
+        it 'returns the correct status, option and values' do
+          expect(subject.find(option_variants, option_argument_defaults) do |status, option, timeout|
+            3500
+          end).to eq([true, 'timeout', 3500])
         end
       end
     end

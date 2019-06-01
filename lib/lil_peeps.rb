@@ -17,9 +17,8 @@ module LilPeeps
   #
   # @example
   #
-  #  parser = LilPeeps.create('--verbose false --debug --timeout')
-  #  parser.find(%w(-v --verbose), true) # => [true, 'verbose', 'false']
-  #  parser.find(%w(--timeout), 1500) # => [true, 'timeout', '1500']
+  #  # Creates an instance of the LilPeeps::Parser
+  #  LilPeeps.create('-o --option --debug --option-with-args arg1 arg2 arg3') # => Parser
   def self.create(args, options = {})
     Parser.new(args, options)
   end

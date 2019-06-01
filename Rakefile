@@ -11,7 +11,7 @@ task default: :spec
 # Yard
 YARD::Rake::YardocTask.new do |t|
   t.files   = ['lib/**/*.rb']
-  t.options = %w(--no-cache --protected --private)
+  t.options = %w[--no-cache --protected --private]
   t.stats_options = ['--list-undoc']
 end
 

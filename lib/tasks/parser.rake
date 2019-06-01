@@ -30,7 +30,7 @@ namespace :parser do
     else
       parser_args = args[:args].split
       parser_option_argument_defaults = args[:option_argument_defaults].split
-      parser_find = args[:find]
+      parser_find = args[:find].split
 
       puts 'Calling LilPeeps::create using...'.red
       puts "\targs: #{parser_args}"

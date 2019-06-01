@@ -23,33 +23,41 @@ module LilPeeps
       object.is_a?(Array) ? object : [object]
     end
 
-    # Finds the option in #args and return the option argument(s)
-    # provided.
+    # Finds the first occurance of the option variants provided in args and return the option argument(s) provided.
     #
-    # PARAMS
+    # @param [Array<String>, String] option_variants the option list to look for (e.g. '-g', %w(-g --group-by))
     #
-    # <option>: the option list to look for (e.g. %w(-g --group-by)) # <option_argument_defaults>: the default values
-    # for the option argument list if the arguments for the option are not found. For example, if "-g <type> is
-    # expected and only "-g" is encountered, "-g <option_argument_defaults[0]>" will be used.
+    # @param [Array<String>, String] option_argument_defaults the default value(s) to use if no option arguments for the
+    # option is found. For example, if "-g <type>" is expected and only "-g" is found,
+    # "-g <option_argument_defaults[0]>" will be used. #
     #
-    # RETURN
+    # @return [Array<Bool, String>] if no option_argument_defaults are provided. the found status of the option and the
+    #    option variant. If any of the option variants are found, a status of true is returned, along with the
+    #    option variant found. If none of the option variants are found, a status of false is returned, along with the
+    #    first option variant provided (i.e. option_variants[0]).
     #
-    # Returns the status (found/not found), the option that was found, and the option arguments; use the splat (*)
-    # operator on the option_args as a convenience so that the option args are returned individually as opposed to an
-    # array of args.
+    # @return [Array<Bool, String, *String>] if option_argument_defaults are provided, the found status of the option,
+    #    the option variant, and the option arguments.
+    #    If any of the option variants are found, a status of true is returned, along with the
+    #    option variant found. If none of the option variants are found, a status of false is returned, along with the
+    #    first option variant provided (i.e. option_variants[0]).
     #
-    # EXAMPLES
+    # @examples
     #
-    # Assuming the option is found:
-    # status, option, arg1, arg2 = find(%w(--test -t), %w(def1 def2))
-    # # => true, '-t', 'arg1', 'arg2'
+    #  # Creates an instance of the LilPeeps::Parser
+    #  parser = LilPeeps.create('-o --option --debug --option-with-args arg1 arg2 arg3')
     #
-    # Assuming the option is not found:
-    # status, option, debug = find(['--debug', '-d'], 'false') do |_, _, value|
-    #                           value == 'true'
-    #                         end
-    # When the option is not found, <option> will return the last option in the <option> Array:
-    # # => false, '-d', false
+    #  # If an option variant is searched for and no option argument defaults are provided, the status indicates whether
+    #  # or not an option variant was present or not (true/false)
+    #  parser.find('--debug') # => [true, 'debug']
+    #
+    #  # However, if option argument defaults are provided, they are used
+    #  parser = LilPeeps.create('--debug')
+    #  parser.find('--debug', [1, 2, 3]) # => [true, "debug", "1", "2", "3"]
+    #
+    #  parser = LilPeeps.create('--debug -v --timeout 1500')
+    #  parser.find(['-v', '--verbose'], false) # => [true, 'verbose', 'true']
+    #  parser.find(['--timeout'], 1500) # => [true, 'timeout', '1500']
     def find(option_variants, option_argument_defaults = [], &block)
       raise ArgumentError, 'Param [option_variants] is nil' if option_variants.nil?
 
