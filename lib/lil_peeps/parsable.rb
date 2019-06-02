@@ -12,7 +12,7 @@ module LilPeeps
     include ParserOptions
 
     # The default regex used to identify options as opposed to option arguments
-    OPTION_REGEX = /(\A|\s)-+/.freeze
+    OPTION_REGEX = /(?=\A|\s-)/.freeze
 
     attr_accessor :args
 
@@ -74,7 +74,7 @@ module LilPeeps
       option_variant = find_option_variant(option_variants, parsed_args)
 
       if option_variant.nil?
-        option_variant_not_found(normalize_option_variant(option_variants.first), option_argument_defaults, &block)
+        option_variant_not_found(option_variants[0], option_argument_defaults, &block)
       else
         option_variant_found(option_variant, option_argument_defaults, &block)
       end
@@ -83,7 +83,7 @@ module LilPeeps
     # Returns the first option occurrance found in the <parsed_args> OpenStruct
     def find_option_variant(option_variants, parsed_args)
       option_variants.each do |option_variant|
-        option_variant = parsed_args[option_variant_to_sym(option_variant)]
+        option_variant = parsed_args[option_variant.to_sym]
         return option_variant unless option_variant.nil?
       end
       nil
@@ -160,24 +160,13 @@ module LilPeeps
       [option.to_sym, { option: option, args: option_arguments }.merge(option_arguments_hash)]
     end
 
-    def option_variant_to_sym(option_variant)
-      normalize_option_variant(option_variant).to_sym
-    end
-
-    def normalize_option_variant(option_variant)
-      # Remove leading option dashes ('-')
-      option_variant.gsub(option_regex, '')
-    end
-
     def parse(args)
-      args_strings = args.join(' ').split(option_regex).reject do |a|
-        a.strip!
-        a.empty?
-      end
+      args = args.join(' ')
+      args_strings = args.split(option_regex).map(&:strip)
       parsed_args = {}
       args_strings.map do |arg_string|
-        option, option_hash = option_and_option_hash(arg_string)
-        parsed_args[option] = option_hash
+        option_sym, option_hash = option_and_option_hash(arg_string)
+        parsed_args[option_sym] = option_hash
       end
       parsed_args
     end
@@ -194,8 +183,8 @@ module LilPeeps
       [option_variant_found, option, *values]
     end
 
-    protected :args, :args=, :ensure_array, :find_option_variant, :normalize_option_variant, :option_and_option_args,
-              :option_and_option_hash, :option_variant_found, :option_variant_not_found, :option_regex, :options,
-              :options=, :option_variant_to_sym, :parse, :return_results
+    protected :args, :args=, :ensure_array, :find_option_variant, :option_and_option_args, :option_and_option_hash,
+              :option_variant_found, :option_variant_not_found, :option_regex, :options, :options=, :parse,
+              :return_results
   end
 end
