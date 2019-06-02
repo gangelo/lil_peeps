@@ -9,8 +9,6 @@ module LilPeeps
   # provide if the option is missing, or, if any of the option(s) arguments required are missing. If duplicate option
   # are found, the last option wins; the rest are discarded.
   module Parsable
-    include ParserOptions
-
     # The default regex used to identify options as opposed to option arguments
     OPTION_REGEX = /(?=\A|\s-)/.freeze
 
@@ -40,7 +38,7 @@ module LilPeeps
     #    the option variant, and the option arguments.
     #    If any of the option variants are found, a status of true is returned, along with the
     #    option variant found. If none of the option variants are found, a status of false is returned, along with the
-    #    first option variant provided (i.e. option_variants[0]).
+    #    first option variant provided (i.e. option_variants).
     #
     # @examples
     #
@@ -89,6 +87,25 @@ module LilPeeps
       nil
     end
 
+    def option_and_option_args_hash(parse_option_and_option_args_string)
+      option, option_arguments = parse_option_and_option_args(parse_option_and_option_args_string)
+      option_arguments_hash = if option_arguments.nil?
+                                {}
+                              else
+                                # rubocop:disable Metrics/LineLength
+                                option_arguments.each_with_index.each_with_object({}) do |(option_argument, index), hash|
+                                  hash["arg#{index}".to_sym] = option_argument
+                                end
+                                # rubocop:enable Metrics/LineLength
+                              end
+      [option.to_sym, { option: option, args: option_arguments }.merge(option_arguments_hash)]
+    end
+
+    # Returns the regular expression to identify option variants as opposed to option arguments
+    def option_regex
+      options.option_regex || OPTION_REGEX
+    end
+
     # This member processes options that are found.
     #
     # Params
@@ -125,11 +142,6 @@ module LilPeeps
       return_results(false, option_variant, *option_argument_defaults, &block)
     end
 
-    # Returns the regular expression to identify option variants as opposed to option arguments
-    def option_regex
-      options.option_regex || OPTION_REGEX
-    end
-
     def options
       @options ||= {}.extend(ParserOptions)
     end
@@ -141,34 +153,20 @@ module LilPeeps
       @options = value.dup.extend(ParserOptions)
     end
 
-    def option_and_option_args(arg_string)
-      options_and_option_args = arg_string.split
-      [options_and_option_args[0], options_and_option_args[1..-1]]
-    end
-
-    def option_and_option_hash(option_and_option_args_string)
-      option, option_arguments = option_and_option_args(option_and_option_args_string)
-      option_arguments_hash = if option_arguments.nil?
-                                {}
-                              else
-                                # rubocop:disable Metrics/LineLength
-                                option_arguments.each_with_index.each_with_object({}) do |(option_argument, index), hash|
-                                  hash["arg#{index}".to_sym] = option_argument
-                                end
-                                # rubocop:enable Metrics/LineLength
-                              end
-      [option.to_sym, { option: option, args: option_arguments }.merge(option_arguments_hash)]
-    end
-
     def parse(args)
       args = args.join(' ')
       args_strings = args.split(option_regex).map(&:strip)
       parsed_args = {}
       args_strings.map do |arg_string|
-        option_sym, option_hash = option_and_option_hash(arg_string)
+        option_sym, option_hash = option_and_option_args_hash(arg_string)
         parsed_args[option_sym] = option_hash
       end
       parsed_args
+    end
+
+    def parse_option_and_option_args(arg_string)
+      options_and_option_args = arg_string.split
+      [options_and_option_args[0], options_and_option_args[1..-1]]
     end
 
     def return_results(option_variant_found, option, *values)
@@ -183,8 +181,8 @@ module LilPeeps
       [option_variant_found, option, *values]
     end
 
-    protected :args, :args=, :ensure_array, :find_option_variant, :option_and_option_args, :option_and_option_hash,
-              :option_variant_found, :option_variant_not_found, :option_regex, :options, :options=, :parse,
-              :return_results
+    protected :args, :args=, :ensure_array, :find_option_variant, :option_and_option_args_hash, :option_regex,
+              :option_variant_found, :option_variant_not_found, :options, :options=, :parse,
+              :parse_option_and_option_args, :return_results
   end
 end
