@@ -100,6 +100,16 @@ RSpec.describe LilPeeps::Parsable do
                               [:default1, :default2])).to eq([true, '--embedded-with-dashes', 'arg0', :default2])
         end
       end
+
+      context 'with an alternate option regex provided' do
+        let(:subject) { parsable.new.tap { |o| o.args = %w($$debug) } }
+        let(:option_variants) { %w($$debug) }
+
+        it 'returns the correct status, option and no value' do
+          subject.options = { option_regex: /(?=\A|\s\$)/ }
+          expect(subject.find(option_variants)).to eq([true, '$$debug'])
+        end
+      end
     end
 
     context 'with multiple option variations are provided' do
@@ -172,16 +182,35 @@ RSpec.describe LilPeeps::Parsable do
           end
         end
       end
-    end
 
-    context 'with options provided' do
-      let(:subject) { parsable.new.tap { |o| o.args = %w($d $$debug $$test $t $a $$argh) } }
-      let(:option_variants) { %w($$test $t) }
+      context 'with an alternate option regex provided' do
+        let(:subject) { parsable.new.tap { |o| o.args = %w($d $$debug $$test $t $a $$argh) } }
+        let(:option_variants) { %w($$test $t) }
 
-      context 'when an alternate option regex is provided' do
         it 'returns the correct status, option and no value' do
           subject.options = { option_regex: /(?=\A|\s\$)/ }
           expect(subject.find(option_variants)).to eq([true, '$$test'])
+        end
+      end
+
+      context 'with duplicate options' do
+        let(:subject) { parsable.new.tap { |o| o.args = %w(--d 1 2 3 -b --g --another-one x y x -a --d -c --multi-line -c --another-one 1 2 3 -a 4 5 6 -c x y z --multi-line) } }
+        let(:option_argument_defaults) { %w(def1 def2 def3) }
+
+        context 'with an embedded dashes option' do
+          let(:option_variants) { %w(--another-one) }
+
+          it 'returns the correct status, option and values' do
+            expect(subject.find(option_variants, option_argument_defaults)).to eq([true, '--another-one', '1', '2', '3'])
+          end
+        end
+
+        context 'with a single dash option' do
+          let(:option_variants) { %w(-a) }
+
+          it 'returns the correct status, option and values' do
+            expect(subject.find(option_variants, option_argument_defaults)).to eq([true, '-a', '4', '5', '6'])
+          end
         end
       end
     end
@@ -208,18 +237,6 @@ RSpec.describe LilPeeps::Parsable do
           expect(subject.find(option_variants, option_argument_defaults) do |status, option, timeout|
             3500
           end).to eq([true, '--timeout', 3500])
-        end
-      end
-    end
-
-    context 'test' do
-      context 'test' do
-        let(:subject) { parsable.new.tap { |o| o.args = %w(--d 1 2 3 -b --g --a --BIG-boy --another-one 1 2 3 -a 1 2 3 -c --multi-line) } }
-        let(:option_variants) { %w(--another-one -a) }
-        let(:option_argument_defaults) { %w( def1 def2 def3) }
-
-        it 'returns the correct status, option and values' do
-          expect(subject.find(option_variants, option_argument_defaults)).to eq([true, '--another-one', '1', '2', '3'])
         end
       end
     end
